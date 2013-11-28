@@ -300,6 +300,11 @@ public class PhoneInterfaceManager extends ITelephony.Stub {
         return;
     }
 
+    public void toggle2G(boolean on) {
+        return;
+
+    }
+
     private boolean showCallScreenInternal(boolean specifyInitialDialpadState,
                                            boolean showDialpad) {
         if (!PhoneGlobals.sVoiceCapable) {
