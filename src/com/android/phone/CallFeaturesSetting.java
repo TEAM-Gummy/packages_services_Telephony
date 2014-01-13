@@ -1663,6 +1663,7 @@ public class CallFeaturesSetting extends PreferenceActivity
                 }
             }
         }
+
         updateVoiceNumberField();
         mVMProviderSettingsForced = false;
         createSipCallSettings();
@@ -2010,15 +2011,19 @@ public class CallFeaturesSetting extends PreferenceActivity
                         VM_NUMBERS_SHARED_PREFERENCES_NAME, MODE_PRIVATE);
 
         String providerToIgnore = null;
-        if (getIntent().getAction().equals(ACTION_ADD_VOICEMAIL)) {
-            if (getIntent().hasExtra(IGNORE_PROVIDER_EXTRA)) {
-                providerToIgnore = getIntent().getStringExtra(IGNORE_PROVIDER_EXTRA);
+        try {
+            if (getIntent().getAction().equals(ACTION_ADD_VOICEMAIL)) {
+                if (getIntent().hasExtra(IGNORE_PROVIDER_EXTRA)) {
+                    providerToIgnore = getIntent().getStringExtra(IGNORE_PROVIDER_EXTRA);
+                }
+                if (DBG) log("Found ACTION_ADD_VOICEMAIL. providerToIgnore=" + providerToIgnore);
+                if (providerToIgnore != null) {
+                    // IGNORE_PROVIDER_EXTRA implies we want to remove the choice from the list.
+                    deleteSettingsForVoicemailProvider(providerToIgnore);
+                }
             }
-            if (DBG) log("Found ACTION_ADD_VOICEMAIL. providerToIgnore=" + providerToIgnore);
-            if (providerToIgnore != null) {
-                // IGNORE_PROVIDER_EXTRA implies we want to remove the choice from the list.
-                deleteSettingsForVoicemailProvider(providerToIgnore);
-            }
+        } catch (Exception e) {
+            // Do nothing
         }
 
         mVMProvidersData.clear();
