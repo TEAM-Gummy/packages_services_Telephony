@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2008 The Android Open Source Project
  * Blacklist - Copyright (C) 2013 The CyanogenMod Project
  *
@@ -189,6 +192,7 @@ public class CallFeaturesSetting extends PreferenceActivity
     private static final String BUTTON_RETRY_KEY       = "button_auto_retry_key";
     private static final String BUTTON_TTY_KEY         = "button_tty_mode_key";
     private static final String BUTTON_HAC_KEY         = "button_hac_key";
+    private static final String BUTTON_NOISE_SUPPRESSION_KEY = "button_noise_suppression_key";
 
     private static final String BUTTON_GSM_UMTS_OPTIONS = "button_gsm_more_expand_key";
     private static final String BUTTON_CDMA_OPTIONS = "button_cdma_more_expand_key";
@@ -226,6 +230,9 @@ public class CallFeaturesSetting extends PreferenceActivity
     // preferred TTY mode
     // Phone.TTY_MODE_xxx
     static final int preferredTtyMode = Phone.TTY_MODE_OFF;
+
+    // dialog identifiers for TTY
+    private static final int TTY_SET_RESPONSE_ERROR = 800;
 
     public static final String HAC_KEY = "HACSetting";
     public static final String HAC_VAL_ON = "ON";
@@ -295,6 +302,7 @@ public class CallFeaturesSetting extends PreferenceActivity
     private CheckBoxPreference mButtonCallUiInBackground;
     private ListPreference mButtonDTMF;
     private ListPreference mButtonTTY;
+    private CheckBoxPreference mButtonNoiseSuppression;
     private ListPreference mButtonSipCallOptions;
     private CheckBoxPreference mMwiNotification;
     private ListPreference mVoicemailProviders;
@@ -522,6 +530,16 @@ public class CallFeaturesSetting extends PreferenceActivity
         } else if (preference == mButtonDTMF) {
             return true;
         } else if (preference == mButtonTTY) {
+            if (PhoneUtils.isImsVtCallPresent()) {
+                // TTY Mode change is not allowed during a VT call
+                showDialog(TTY_SET_RESPONSE_ERROR);
+            }
+            return true;
+        } else if (preference == mButtonNoiseSuppression) {
+            int nsp = mButtonNoiseSuppression.isChecked() ? 1 : 0;
+            // Update Noise suppression value in Settings database
+            Settings.System.putInt(mPhone.getContext().getContentResolver(),
+                    Settings.System.NOISE_SUPPRESSION, nsp);
             return true;
         } else if (preference == mButtonCallUiInBackground) {
             return true;
@@ -1472,8 +1490,22 @@ public class CallFeaturesSetting extends PreferenceActivity
                     (id == VOICEMAIL_REVERTING_DIALOG ? R.string.reverting_settings :
                     R.string.reading_settings)));
             return dialog;
-        }
+        } else if (id == TTY_SET_RESPONSE_ERROR) {
 
+            AlertDialog.Builder b = new AlertDialog.Builder(this);
+
+            b.setTitle(getText(R.string.tty_mode_option_title));
+            b.setMessage(getText(R.string.tty_mode_not_allowed_vt_call));
+            b.setIconAttribute(android.R.attr.alertDialogIcon);
+            b.setPositiveButton(R.string.ok, this);
+            b.setCancelable(false);
+            AlertDialog dialog = b.create();
+
+            // make the dialog more obvious by bluring the background.
+            dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+
+            return dialog;
+        }
 
         return null;
     }
@@ -1583,8 +1615,8 @@ public class CallFeaturesSetting extends PreferenceActivity
         mButtonAutoRetry = (CheckBoxPreference) findPreference(BUTTON_RETRY_KEY);
         mButtonHAC = (CheckBoxPreference) findPreference(BUTTON_HAC_KEY);
         mButtonTTY = (ListPreference) findPreference(BUTTON_TTY_KEY);
-        mButtonCallUiInBackground =
-                (CheckBoxPreference) findPreference(BUTTON_CALL_UI_IN_BACKGROUND);
+        mButtonNoiseSuppression = (CheckBoxPreference) findPreference(BUTTON_NOISE_SUPPRESSION_KEY);
+        mButtonCallUiInBackground = (CheckBoxPreference) findPreference(BUTTON_CALL_UI_IN_BACKGROUND);
         mVoicemailProviders = (ListPreference) findPreference(BUTTON_VOICEMAIL_PROVIDER_KEY);
         mButtonBlacklist = (PreferenceScreen) findPreference(BUTTON_BLACKLIST);
 
@@ -1649,6 +1681,15 @@ public class CallFeaturesSetting extends PreferenceActivity
             } else {
                 prefSet.removePreference(mButtonTTY);
                 mButtonTTY = null;
+            }
+        }
+
+        if (mButtonNoiseSuppression != null) {
+            if (getResources().getBoolean(R.bool.has_in_call_noise_suppression)) {
+                mButtonNoiseSuppression.setOnPreferenceChangeListener(this);
+            } else {
+                prefSet.removePreference(mButtonNoiseSuppression);
+                mButtonNoiseSuppression = null;
             }
         }
 
@@ -1724,10 +1765,10 @@ public class CallFeaturesSetting extends PreferenceActivity
                 }
             }
         }
-
         updateVoiceNumberField();
         mVMProviderSettingsForced = false;
         createSipCallSettings();
+        createImsSettings();
 
         mRingtoneLookupRunnable = new Runnable() {
             @Override
@@ -1824,6 +1865,10 @@ public class CallFeaturesSetting extends PreferenceActivity
                             mSipSharedPreferences.getSipCallOption()));
             mButtonSipCallOptions.setSummary(mButtonSipCallOptions.getEntry());
         }
+    }
+
+    private void createImsSettings() {
+        addPreferencesFromResource(R.xml.ims_settings_category);
     }
 
     // Gets the call options for SIP depending on whether SIP is allowed only
@@ -2199,19 +2244,15 @@ public class CallFeaturesSetting extends PreferenceActivity
                         VM_NUMBERS_SHARED_PREFERENCES_NAME, MODE_PRIVATE);
 
         String providerToIgnore = null;
-        try {
-            if (getIntent().getAction().equals(ACTION_ADD_VOICEMAIL)) {
-                if (getIntent().hasExtra(IGNORE_PROVIDER_EXTRA)) {
-                    providerToIgnore = getIntent().getStringExtra(IGNORE_PROVIDER_EXTRA);
-                }
-                if (DBG) log("Found ACTION_ADD_VOICEMAIL. providerToIgnore=" + providerToIgnore);
-                if (providerToIgnore != null) {
-                    // IGNORE_PROVIDER_EXTRA implies we want to remove the choice from the list.
-                    deleteSettingsForVoicemailProvider(providerToIgnore);
-                }
+        if (getIntent().getAction().equals(ACTION_ADD_VOICEMAIL)) {
+            if (getIntent().hasExtra(IGNORE_PROVIDER_EXTRA)) {
+                providerToIgnore = getIntent().getStringExtra(IGNORE_PROVIDER_EXTRA);
             }
-        } catch (Exception e) {
-            // Do nothing
+            if (DBG) log("Found ACTION_ADD_VOICEMAIL. providerToIgnore=" + providerToIgnore);
+            if (providerToIgnore != null) {
+                // IGNORE_PROVIDER_EXTRA implies we want to remove the choice from the list.
+                deleteSettingsForVoicemailProvider(providerToIgnore);
+            }
         }
 
         mVMProvidersData.clear();
