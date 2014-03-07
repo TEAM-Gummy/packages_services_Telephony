@@ -33,7 +33,7 @@
         <item>ZabaSearch</item>
     </string-array>
 
-    <string-array translatable="true" name="reverse_lookup_provider_names">
+    <string-array name="reverse_lookup_provider_names" translatable="false">
         <item>OpenCnam (US)</item>
         <item>WhitePages (US)</item>
         <item>WhitePages (CA)</item>
