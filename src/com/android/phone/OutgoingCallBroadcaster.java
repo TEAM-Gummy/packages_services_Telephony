@@ -607,6 +607,12 @@ public class OutgoingCallBroadcaster extends Activity
                 finish();
                 return;
             }
+            if (PhoneUtils.isAnyOtherSubActive(mSubscription) && MSimTelephonyManager.getDefault()
+                    .getMultiSimConfiguration() != MSimTelephonyManager.MultiSimVariants.DSDA) {
+                Log.d(TAG, "Call not allowed, as other sub is already active" + mSubscription);
+                handleNonVoiceCapable(intent);
+                return;
+            }
             intent.putExtra(SUBSCRIPTION_KEY, mSubscription);
             Log.d(TAG, "for non emergency call,sub is  :" + mSubscription);
             callNow = false;
@@ -723,6 +729,7 @@ public class OutgoingCallBroadcaster extends Activity
             broadcastIntent.putExtra(EXTRA_ORIGINAL_URI, uri.toString());
             broadcastIntent.putExtra(EXTRA_DIAL_CONFERENCE_URI,
                     intent.getBooleanExtra((EXTRA_DIAL_CONFERENCE_URI), false));
+            broadcastIntent.putExtra(SUBSCRIPTION_KEY, mSubscription);
 
             // Need to raise foreground in-call UI as soon as possible while allowing 3rd party app
             // to intercept the outgoing call.
