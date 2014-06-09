@@ -36,7 +36,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 import com.android.internal.telephony.Phone;
-import com.android.internal.util.cm.QuietHoursUtils;
+import com.android.internal.util.gummy.QuietHoursUtils;
 
 /**
  * Ringer manager for the Phone app.
