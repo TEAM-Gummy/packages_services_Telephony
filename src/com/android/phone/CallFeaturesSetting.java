@@ -199,6 +199,7 @@ public class CallFeaturesSetting extends PreferenceActivity
     private static final String BUTTON_CDMA_OPTIONS = "button_cdma_more_expand_key";
 
     private static final String BUTTON_CALL_UI_IN_BACKGROUND = "bg_incall_screen";
+    private static final String BUTTON_CALL_UI_AS_HEADS_UP = "bg_incall_screen_as_heads_up";
 
     private static final String INCALL_GLOWPAD_TRANSPARENCY = "incall_glowpad_transparency";
 
@@ -327,6 +328,7 @@ public class CallFeaturesSetting extends PreferenceActivity
     private CheckBoxPreference mButtonAutoRetry;
     private CheckBoxPreference mButtonHAC;
     private CheckBoxPreference mButtonCallUiInBackground;
+    private CheckBoxPreference mButtonCallUiAsHeadsUp;
     private CheckBoxPreference mIncallGlowpadTransparency;
     private ListPreference mDialkeyPadding;
     private ListPreference mButtonDTMF;
@@ -575,6 +577,8 @@ public class CallFeaturesSetting extends PreferenceActivity
             return true;
         } else if (preference == mButtonCallUiInBackground) {
             return true;
+        } else if (preference == mButtonCallUiAsHeadsUp) {
+            return true;
         } else if (preference == mButtonAutoRetry) {
             android.provider.Settings.Global.putInt(mPhone.getContext().getContentResolver(),
                     android.provider.Settings.Global.CALL_AUTO_RETRY,
@@ -649,6 +653,10 @@ public class CallFeaturesSetting extends PreferenceActivity
         } else if (preference == mButtonCallUiInBackground) {
             Settings.System.putInt(mPhone.getContext().getContentResolver(),
                     Settings.System.CALL_UI_IN_BACKGROUND,
+                    (Boolean) objValue ? 1 : 0);
+        } else if (preference == mButtonCallUiAsHeadsUp) {
+            Settings.System.putInt(mPhone.getContext().getContentResolver(),
+                    Settings.System.CALL_UI_AS_HEADS_UP,
                     (Boolean) objValue ? 1 : 0);
         } else if (preference == mIncallGlowpadTransparency) {
             Settings.System.putInt(mPhone.getContext().getContentResolver(),
@@ -1667,6 +1675,7 @@ public class CallFeaturesSetting extends PreferenceActivity
                 (ListPreference) findPreference(DIALKEY_PADDING);
         mButtonNoiseSuppression = (CheckBoxPreference) findPreference(BUTTON_NOISE_SUPPRESSION_KEY);
         mButtonCallUiInBackground = (CheckBoxPreference) findPreference(BUTTON_CALL_UI_IN_BACKGROUND);
+        mButtonCallUiAsHeadsUp = (CheckBoxPreference) findPreference(BUTTON_CALL_UI_AS_HEADS_UP);
         mVoicemailProviders = (ListPreference) findPreference(BUTTON_VOICEMAIL_PROVIDER_KEY);
         mButtonBlacklist = (PreferenceScreen) findPreference(BUTTON_BLACKLIST);
         mT9SearchInputLocale = (ListPreference) findPreference(BUTTON_T9_SEARCH_INPUT_LOCALE);
@@ -1759,6 +1768,10 @@ public class CallFeaturesSetting extends PreferenceActivity
 
         if (mButtonCallUiInBackground != null) {
             mButtonCallUiInBackground.setOnPreferenceChangeListener(this);
+        }
+
+        if (mButtonCallUiAsHeadsUp!= null) {
+            mButtonCallUiAsHeadsUp.setOnPreferenceChangeListener(this);
         }
 
         if (mT9SearchInputLocale != null) {
@@ -2037,8 +2050,14 @@ public class CallFeaturesSetting extends PreferenceActivity
 
         if (mButtonCallUiInBackground != null) {
             int callUiInBackground = Settings.System.getInt(getContentResolver(),
-                    Settings.System.CALL_UI_IN_BACKGROUND, 0);
+                    Settings.System.CALL_UI_IN_BACKGROUND, 1);
             mButtonCallUiInBackground.setChecked(callUiInBackground != 0);
+        }
+
+        if (mButtonCallUiAsHeadsUp != null) {
+            int callUiAsHeadsUp = Settings.System.getInt(getContentResolver(),
+                    Settings.System.CALL_UI_AS_HEADS_UP, 1);
+            mButtonCallUiAsHeadsUp.setChecked(callUiAsHeadsUp != 0);
         }
 
         if (mIncallGlowpadTransparency != null) {
