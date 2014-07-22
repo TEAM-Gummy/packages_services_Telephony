@@ -393,11 +393,6 @@ public class PhoneInterfaceManager extends ITelephony.Stub implements CallModele
                 android.provider.Settings.Global.PREFERRED_NETWORK_MODE, network);
     }
 
-    public void toggle2G(boolean on) {
-        return;
-
-    }
-
     private boolean showCallScreenInternal(boolean specifyInitialDialpadState,
                                            boolean showDialpad) {
         if (!PhoneGlobals.sVoiceCapable) {
