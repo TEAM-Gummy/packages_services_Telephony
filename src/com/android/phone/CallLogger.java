@@ -23,7 +23,6 @@ import com.android.internal.telephony.Connection;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyCapabilities;
-import com.android.internal.telephony.cdma.CdmaConnection;
 import com.android.phone.common.CallLogAsync;
 
 import android.net.Uri;
@@ -89,12 +88,6 @@ class CallLogger {
         final boolean isOtaspNumber = TelephonyCapabilities.supportsOtasp(phone)
                 && phone.isOtaSpNumber(number);
 
-        int durationType = Calls.DURATION_TYPE_ACTIVE;
-        if (Calls.OUTGOING_TYPE == callLogType && c instanceof CdmaConnection
-                && !((CdmaConnection) c).isConnectionTimerReset()) {
-            durationType = Calls.DURATION_TYPE_CALLOUT;
-        }
-
         // Don't log OTASP calls.
         if (!isOtaspNumber) {
             //get the current phone type: csvoice, ims
@@ -119,8 +112,7 @@ class CallLogger {
             if (DBG) {
                 log("CallLogger: logCall: callLogType out =" + callLogType);
             }
-            logCall(ci, logNumber, presentation, callLogType, date, duration, c.getCall()
-                    .getPhone().getSubscription(), durationType);
+            logCall(ci, logNumber, presentation, callLogType, date, duration);
         }
     }
 
@@ -148,7 +140,7 @@ class CallLogger {
      * Logs a call to the call from the parameters passed in.
      */
     public void logCall(CallerInfo ci, String number, int presentation, int callType, long start,
-                        long duration, int subscription, int durationType) {
+                        long duration) {
         final boolean isEmergencyNumber = PhoneNumberUtils.isLocalEmergencyNumber(number,
                 mApplication);
 
@@ -170,7 +162,7 @@ class CallLogger {
             }
 
             CallLogAsync.AddCallArgs args = new CallLogAsync.AddCallArgs(mApplication, ci, number,
-                    presentation, callType, start, duration, subscription, durationType);
+                    presentation, callType, start, duration);
             mCallLog.addCall(args);
         }
     }
